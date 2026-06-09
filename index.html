@@ -1,0 +1,1086 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📒 记账日历</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<style>
+/* ── Reset & Variables ─────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f0f3;--card:#fff;--border:#e0e0e0;
+  --text:#1a1a1a;--text2:#666;--text3:#aaa;
+  --blue:#007aff;--green:#34c759;--red:#ff3b30;
+  --orange:#ff9500;--purple:#af52de;
+  --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.06);
+}
+[data-theme="dark"]{
+  --bg:#111118;--card:#1a1a24;--border:#2a2a38;
+  --text:#c8c8d0;--text2:#888898;--text3:#5a5a6a;
+  --blue:#4a90d9;--green:#48b560;--red:#e05555;
+  --orange:#d9903a;--purple:#a066c0;
+  --shadow:0 1px 4px rgba(0,0,0,.4);
+}
+[data-theme="dark"] .weekday-hdr{background:#151520;color:var(--text2)}
+[data-theme="dark"] .day:hover{background:#1e1e2a}
+[data-theme="dark"] .day.empty{background:#14141c}
+[data-theme="dark"] .day.empty:hover{background:#14141c}
+[data-theme="dark"] .due-row{border-color:#222230}
+[data-theme="dark"] .modal{background:#1a1a24}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{
+  background:#111118;color:var(--text);border-color:#2a2a38
+}
+[data-theme="dark"] .type-sw{background:#111118}
+[data-theme="dark"] .header{background:var(--card);border-bottom-color:var(--border)}
+[data-theme="dark"] .toolbar{background:var(--card);border-bottom-color:var(--border)}
+[data-theme="dark"] .month-nav button{background:#111118;border-color:#2a2a38;color:var(--text2)}
+[data-theme="dark"] .month-nav button:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+[data-theme="dark"] .btn-ghost{color:var(--text2)}
+[data-theme="dark"] .btn-ghost:hover{background:#222230;color:var(--text)}
+[data-theme="dark"] .day{border-color:#1e1e2a}
+[data-theme="dark"] .day.weekend .day-num{color:#c06060}
+[data-theme="dark"] .day.today{background:#1a2535;border-color:#2a4060}
+[data-theme="dark"] .day.today .day-num{background:var(--blue);color:#fff}
+[data-theme="dark"] .due-section{background:var(--card);border-color:var(--border)}
+[data-theme="dark"] .due-header{background:#14141e;border-bottom-color:#222230}
+[data-theme="dark"] .due-row{border-bottom-color:#1e1e2a}
+[data-theme="dark"] .due-row:hover{background:#1e1e2a}
+[data-theme="dark"] .due-check{border-color:#3a3a48}
+[data-theme="dark"] .due-check.done{background:var(--green);border-color:var(--green)}
+[data-theme="dark"] .modal-mask{background:rgba(0,0,0,.6)}
+[data-theme="dark"] .panel{background:var(--card);border-color:var(--border)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.5;
+}
+
+/* ── Header ────────────────────────────────────── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;background:var(--card);border-bottom:1px solid var(--border);
+}
+.header h1{font-size:20px;font-weight:700;white-space:nowrap}
+.header-right{display:flex;gap:8px;align-items:center}
+.btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;
+  transition:all .15s;border:1px solid transparent;
+}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#0066d6}
+.btn-ghost{background:transparent;color:var(--blue);border-color:var(--border)}
+.btn-ghost:hover{background:rgba(0,122,255,.06)}
+.btn-danger{background:transparent;color:var(--red);border-color:var(--red)}
+.btn-danger:hover{background:rgba(255,59,48,.06)}
+
+/* ── Month Nav + Summary ───────────────────────── */
+.toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 24px;background:var(--card);border-bottom:1px solid var(--border);
+  flex-wrap:wrap;gap:8px;
+}
+.month-nav{display:flex;align-items:center;gap:12px}
+.month-nav .month-label{font-size:17px;font-weight:700;min-width:110px;text-align:center}
+.month-nav button{
+  width:32px;height:32px;border-radius:8px;background:var(--bg);
+  border:1px solid var(--border);font-size:16px;display:flex;
+  align-items:center;justify-content:center;transition:all .15s;
+}
+.month-nav button:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-today{width:auto!important;padding:5px 14px!important;font-size:12px!important;white-space:nowrap}
+.btn-theme{font-size:15px!important;padding:5px 10px!important;line-height:1!important}
+.summary-pills{display:flex;gap:16px;font-size:13px}
+.summary-pills .pill{display:flex;align-items:center;gap:4px}
+.summary-pills .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.summary-pills .dot.inc{background:var(--green)}
+.summary-pills .dot.exp{background:var(--red)}
+.summary-pills .dot.net{background:var(--blue)}
+.summary-pills .val{font-weight:700}
+
+/* ── Calendar Grid ─────────────────────────────── */
+.cal-wrap{padding:12px 24px 24px}
+.calendar{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  border:1px solid var(--border);border-bottom:none;
+  position:relative;
+}
+.calendar::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;
+  height:1px;background:var(--border);border-radius:0 0 var(--radius) var(--radius);
+}
+.weekday-hdr{
+  text-align:center;padding:8px 0;font-size:14px;font-weight:600;
+  color:var(--text2);background:#fafafa;border-bottom:1px solid var(--border);
+}
+.weekday-hdr:nth-child(6),.weekday-hdr:nth-child(7){color:var(--red)}
+
+/* ── Day Cell ──────────────────────────────────── */
+.day{
+  min-height:130px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:8px 10px;cursor:pointer;transition:background .12s;position:relative;
+  display:flex;flex-direction:column;
+}
+.day:nth-child(7n){border-right:none}
+.day:hover{background:#f5f8ff}
+.day.empty{background:#fafafa;cursor:default}
+.day.empty:hover{background:#fafafa}
+
+.day-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.day-num{
+  font-size:17px;font-weight:700;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;border-radius:50%;
+}
+.day.weekend .day-num{color:var(--red)}
+.day.today .day-num{background:var(--blue);color:#fff}
+
+.day-body{flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.day-tx{
+  display:flex;align-items:center;gap:3px;
+  font-size:13px;line-height:1.3;padding:1px 0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.day-tx .icon{flex-shrink:0;width:14px;text-align:center;font-size:12px}
+.day-tx .label{overflow:hidden;text-overflow:ellipsis}
+.day-tx.inc .label{color:var(--green)}
+.day-tx.exp .label{color:var(--red)}
+
+.day-total{
+  display:flex;gap:6px;font-size:12px;margin-top:auto;
+  padding-top:3px;border-top:1px solid #f0f0f0;
+}
+.day-total .t-inc{color:var(--green);font-weight:600}
+.day-total .t-exp{color:var(--red);font-weight:600}
+.day-rem{
+  font-size:13px;font-weight:600;padding:2px 5px;border-radius:4px;
+  margin-bottom:2px;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;
+  transition:opacity .15s;
+}
+.day-rem:hover{opacity:.8}
+.day-rem.rem-done{opacity:.45;text-decoration:line-through}
+
+/* ── Due This Month ───────────────────────────── */
+.due-section{padding:0 24px 24px}
+.due-card{
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  border:1px solid var(--border);overflow:hidden;
+}
+.due-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--border);background:#fafafa;
+}
+.due-header h3{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
+.due-header .due-badge{
+  font-size:11px;background:var(--red);color:#fff;border-radius:10px;
+  padding:1px 7px;font-weight:600;
+}
+.due-list{display:flex;flex-direction:column}
+.due-row{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-bottom:1px solid #f5f5f5;transition:background .12s;
+}
+.due-row:last-child{border-bottom:none}
+.due-row:hover{background:#f9f9f9}
+.due-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.due-info{flex:1;min-width:0}
+.due-info .due-name{font-size:13px;font-weight:600}
+.due-info .due-meta{font-size:11px;color:var(--text2)}
+.due-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.due-amt{font-size:14px;font-weight:700;color:var(--red)}
+.due-check{
+  width:22px;height:22px;border-radius:6px;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all .15s;font-size:12px;color:transparent;
+}
+.due-check:hover{border-color:var(--green)}
+.due-check.done{background:var(--green);border-color:var(--green);color:#fff}
+.due-empty{text-align:center;padding:24px;color:var(--text3);font-size:13px}
+
+/* ── Side Panel ────────────────────────────────── */
+.panel-mask{
+  position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:100;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.panel-mask.open{opacity:1;pointer-events:auto}
+.panel{
+  position:fixed;top:0;right:0;bottom:0;width:400px;max-width:92vw;
+  background:var(--card);z-index:101;transform:translateX(100%);
+  transition:transform .25s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.panel.open{transform:translateX(0)}
+.panel-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.panel-top h2{font-size:16px;font-weight:700}
+.panel-x{
+  width:30px;height:30px;border-radius:8px;background:var(--bg);
+  font-size:16px;display:flex;align-items:center;justify-content:center;
+  border:none;cursor:pointer;
+}
+.panel-x:hover{background:var(--border)}
+.panel-list{flex:1;overflow-y:auto;padding:12px 18px}
+.panel-foot{padding:12px 18px;border-top:1px solid var(--border)}
+
+/* ── Tx Row ────────────────────────────────────── */
+.tx-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-bottom:1px solid #f0f0f0;
+}
+.tx-row:last-child{border-bottom:none}
+.tx-row .tx-emoji{
+  width:34px;height:34px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;
+}
+.tx-row .tx-emoji.inc{background:rgba(52,199,89,.1)}
+.tx-row .tx-emoji.exp{background:rgba(255,59,48,.1)}
+.tx-row .tx-mid{flex:1;min-width:0}
+.tx-row .tx-mid .tx-cat{font-size:13px;font-weight:500}
+.tx-row .tx-mid .tx-sub{font-size:11px;color:var(--text2)}
+.tx-row .tx-mid .tx-note{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-row .tx-right{text-align:right;flex-shrink:0}
+.tx-row .tx-right .tx-amt{font-size:14px;font-weight:700}
+.tx-row .tx-right .tx-amt.inc{color:var(--green)}
+.tx-row .tx-right .tx-amt.exp{color:var(--red)}
+.tx-row .tx-right .tx-acts{display:flex;gap:4px;margin-top:2px;justify-content:flex-end}
+.tx-row .tx-right .tx-acts button{
+  font-size:10px;padding:2px 6px;border-radius:4px;
+  background:var(--bg);color:var(--text2);border:none;cursor:pointer;
+}
+.tx-row .tx-right .tx-acts button:hover{background:var(--border)}
+.tx-row .tx-right .tx-acts button.del:hover{background:rgba(255,59,48,.1);color:var(--red)}
+
+.panel-day-sum{
+  display:flex;justify-content:space-around;padding:10px;
+  background:var(--bg);border-radius:8px;margin-bottom:12px;font-size:13px;
+}
+.panel-day-sum .s-inc{color:var(--green);font-weight:700}
+.panel-day-sum .s-exp{color:var(--red);font-weight:700}
+.panel-empty{text-align:center;padding:36px 0;color:var(--text3);font-size:13px}
+
+/* ── Modal ─────────────────────────────────────── */
+.modal-mask{
+  position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;
+  display:none;align-items:center;justify-content:center;
+}
+.modal-mask.open{display:flex}
+.modal-mask *{pointer-events:auto}
+.modal{
+  background:var(--card);border-radius:14px;width:440px;max-width:94vw;
+  box-shadow:0 16px 48px rgba(0,0,0,.18);overflow:hidden;
+  max-height:90vh;display:flex;flex-direction:column;
+}
+.modal-head{flex-shrink:0}
+.modal-body{flex:1;overflow-y:auto;padding:18px}
+.modal-foot{flex-shrink:0}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.modal-head h3{font-size:16px;font-weight:700}
+.modal-x{
+  width:28px;height:28px;border-radius:50%;background:var(--bg);
+  font-size:14px;display:flex;align-items:center;justify-content:center;
+  border:none;cursor:pointer;
+}
+.modal-x:hover{background:var(--border)}
+.modal-body{padding:18px}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:3px}
+.fg input,.fg select,.fg textarea{
+  width:100%;padding:9px 11px;font-size:13px;border:1px solid var(--border);
+  border-radius:7px;outline:none;transition:border .15s;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue)}
+.fg textarea{resize:vertical;min-height:50px}
+.f-row{display:flex;gap:10px}
+.f-row .fg{flex:1}
+.type-sw{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+.type-sw button{
+  flex:1;padding:9px;font-size:13px;font-weight:500;
+  background:var(--card);color:var(--text2);border:none;cursor:pointer;transition:all .12s;
+}
+.type-sw button.on{color:#fff}
+.type-sw button.on.exp{background:var(--red)}
+.type-sw button.on.inc{background:var(--green)}
+.type-sw button.on.repay{background:var(--orange)}
+.modal-foot{
+  display:flex;gap:8px;justify-content:flex-end;
+  padding:12px 18px;border-top:1px solid var(--border);
+}
+
+/* ── Responsive ────────────────────────────────── */
+@media(max-width:700px){
+  .header,.toolbar,.cal-wrap{padding-left:12px;padding-right:12px}
+  .day{min-height:96px;padding:5px 6px}
+  .day-num{font-size:15px;width:24px;height:24px}
+  .day-tx{font-size:12px}
+  .day-total{font-size:11px}
+  .summary-pills{font-size:12px;gap:10px}
+  .panel{width:100%;max-width:100vw}
+  .due-section{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────── -->
+<div class="header">
+  <h1>📒 记账日历</h1>
+  <div class="header-right">
+    <button class="btn btn-ghost" onclick="openBakModal()">💾 备份</button>
+    <button class="btn btn-ghost" onclick="openRemModal()">🔔 提醒</button>
+    <button class="btn btn-primary" onclick="openAddModal()">+ 记一笔</button>
+  </div>
+</div>
+
+<!-- ── Toolbar ───────────────────────────────── -->
+<div class="toolbar">
+  <div class="month-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <span class="month-label" id="monthLabel"></span>
+    <button onclick="changeMonth(1)">›</button>
+    <button class="btn btn-ghost btn-today" onclick="goToday()">📅 今天</button>
+  </div>
+  <div class="summary-pills">
+    <span class="pill"><span class="dot inc"></span>收入 <span class="val" id="sInc" style="color:var(--green)">0</span></span>
+    <span class="pill"><span class="dot exp"></span>支出 <span class="val" id="sExp" style="color:var(--red)">0</span></span>
+    <span class="pill"><span class="dot net"></span>结余 <span class="val" id="sNet">0</span></span>
+    <span class="pill" id="sDuePill" style="display:none"><span class="dot" style="background:var(--orange)"></span>待还 <span class="val" id="sDue" style="color:var(--orange)">0</span></span>
+    <button class="btn btn-ghost btn-theme" onclick="toggleTheme()" id="themeBtn" title="切换深色/浅色模式">🌙</button>
+  </div>
+</div>
+
+<!-- ── Calendar ──────────────────────────────── -->
+<div class="cal-wrap">
+  <div class="calendar">
+    <div class="weekday-hdr">一</div><div class="weekday-hdr">二</div>
+    <div class="weekday-hdr">三</div><div class="weekday-hdr">四</div>
+    <div class="weekday-hdr">五</div><div class="weekday-hdr">六</div>
+    <div class="weekday-hdr">日</div>
+  </div>
+  <!-- days injected by JS into .calendar (after headers) -->
+</div>
+
+<!-- ── Due This Month ────────────────────────── -->
+<div class="due-section">
+  <div class="due-card">
+    <div class="due-header">
+      <h3>🏦 本月待还款 <span class="due-badge" id="dueCount">0</span></h3>
+      <span style="font-size:14px;color:var(--orange);font-weight:800" id="dueTotal"></span>
+    </div>
+    <div class="due-list" id="dueList">
+      <div class="due-empty">加载中...</div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:12px 0 20px">
+  <span onclick="openAboutModal()" style="font-size:12px;color:var(--text3);cursor:pointer">ℹ️ 关于记账日历</span>
+</div>
+
+<!-- ── Panel ─────────────────────────────────── -->
+<div class="panel-mask" id="pMask" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-top">
+    <h2 id="pTitle">日期</h2>
+    <button class="panel-x" onclick="closePanel()">×</button>
+  </div>
+  <div class="panel-list" id="pList"></div>
+  <div class="panel-foot">
+    <button class="btn btn-primary" style="width:100%" onclick="openAddForDate()">+ 添加记录</button>
+  </div>
+</div>
+
+<!-- ── Add / Edit Modal ──────────────────────── -->
+<div class="modal-mask" id="mMask">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="mTitle">记一笔</h3>
+      <button class="modal-x" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="fg">
+        <label>类型</label>
+        <div class="type-sw">
+          <button class="on exp" id="swExp" onclick="setType('expense')">支出</button>
+          <button id="swInc" onclick="setType('income')">收入</button>
+        </div>
+      </div>
+      <div class="fg" id="repayWrap">
+        <label>标记</label>
+        <div class="type-sw">
+          <button class="on" id="swNormal" onclick="setRepayment(false)" style="flex:1">普通</button>
+          <button id="swRepay" onclick="setRepayment(true)" style="flex:1">🏦 还款</button>
+        </div>
+      </div>
+      <div class="f-row">
+        <div class="fg"><label>金额</label><input type="number" id="fAmt" placeholder="0.00" step="0.01" min="0.01"></div>
+        <div class="fg"><label>日期</label><input type="date" id="fDate"></div>
+      </div>
+      <div class="f-row">
+        <div class="fg"><label>分类</label><select id="fCat"></select></div>
+        <div class="fg"><label>项目</label><select id="fProj"></select></div>
+      </div>
+      <div class="fg"><label>备注</label><textarea id="fNote" placeholder="可选"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitTx()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Reminder Modal ───────────────────────── -->
+<div class="modal-mask" id="remMask">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <h3 id="remFormTitle">🔔 还款日提醒</h3>
+      <button class="modal-x" onclick="closeRemModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="remList"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px" id="remFormLabel">添加新提醒</div>
+        <input type="hidden" id="remEditId">
+        <div class="f-row">
+          <div class="fg"><label>名称 *</label><input id="remName" placeholder="如:招行信用卡"></div>
+          <div class="fg" style="max-width:90px"><label>每月几号 *</label><input id="remDay" type="number" min="1" max="28" placeholder="12"></div>
+        </div>
+        <div class="f-row">
+          <div class="fg"><label>最低还款(可选)</label><input id="remAmt" type="number" step="0.01" min="0" placeholder="如 1293.31"></div>
+          <div class="fg"><label>总欠款(可选)</label><input id="remDebt" type="number" step="0.01" min="0" placeholder="如 15000"></div>
+          <div class="fg" style="max-width:70px"><label>颜色</label><input id="remColor" type="color" value="#ff3b30" style="height:35px;padding:3px"></div>
+        </div>
+        <div class="f-row">
+          <div class="fg"><label>起始月份(可选)</label><input id="remStart" placeholder="如 2026-06"></div>
+          <div class="fg"><label>结束月份(可选)</label><input id="remEnd" placeholder="如 2027-04"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:4px">都空=永久 · 填结束月=截止到该月</div>
+        <div class="fg"><label>备注</label><input id="remNote" placeholder="可选"></div>
+        <div class="f-row">
+          <button class="btn btn-primary" style="flex:1" onclick="saveReminder()" id="remSubmitBtn">添加</button>
+          <button class="btn btn-ghost" style="display:none" id="remCancelBtn" onclick="cancelEdit()">取消编辑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Backup Modal ────────────────────────── -->
+<div class="modal-mask" id="bakMask">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <h3>💾 数据备份</h3>
+      <button class="modal-x" onclick="closeBakModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px">
+        <button class="btn btn-primary" style="width:100%" onclick="doBackup()">立即备份</button>
+        <div id="bakMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--green);text-align:center"></div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">备份记录(最近30条)</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">💾 备份是独立文件,保存在 backups/ 目录,修改代码或重启不会删除</div>
+      <div id="bakList" style="max-height:300px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── About Modal ────────────────────────── -->
+<div class="modal-mask" id="aboutMask">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <h3>ℹ️ 关于</h3>
+      <button class="modal-x" onclick="closeAboutModal()">×</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:28px 24px">
+      <div style="font-size:48px;margin-bottom:10px">📒</div>
+      <div style="font-size:24px;font-weight:700;margin-bottom:6px">记账日历</div>
+      <div style="font-size:17px;color:var(--text2);margin-bottom:18px;line-height:1.6">你的数据，只属于你。</div>
+      <div style="background:var(--bg);border-radius:8px;padding:16px;margin-bottom:18px;text-align:left;font-size:16px;color:var(--text2);line-height:1.8">
+        <div>💾 <b>数据目录</b></div>
+        <div style="white-space:nowrap;overflow-x:auto;color:var(--text);font-size:15px" id="aboutDbPath"></div>
+        <div style="margin-top:12px">📂 <b>项目地址</b></div>
+        <div><a href="https://github.com/Rechalliberalexmoll/FinanceCalendar" target="_blank" style="color:var(--blue);text-decoration:none;font-size:15px">github.com/Rechalliberalexmoll/FinanceCalendar</a></div>
+      </div>
+      <div style="font-size:15px;color:var(--text3);line-height:1.6">
+        100% 本地运行 · 零云端 · 零追踪<br>
+        MIT License · Free & Open Source
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" onclick="closeAboutModal()">知道了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   Config & State
+   ═══════════════════════════════════════════════ */
+const API = 'http://127.0.0.1:8000';
+
+/* ── Theme Toggle ───────────────────────────── */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('theme', t);
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+}
+// Init theme on load
+(function() {
+  const saved = localStorage.getItem('theme');
+  applyTheme(saved || 'light');
+})();
+
+const EMOJI = {
+  '餐饮':'🍜','交通':'🚌','购物':'🛒','娱乐':'🎮','居住':'🏠',
+  '医疗':'💊','教育':'📚','通讯':'📱','其他支出':'📦',
+  '信用卡还款':'💳','花呗还款':'📱','贷款还款':'🏦','其他还款':'🔁',
+  '工资':'💰','奖金':'🎯','投资':'📈','兼职':'💼','其他收入':'💵',
+};
+const DEF = '💸';
+
+let curY, curM;          // current view year/month (1-12)
+let cats = [], projs = [];
+let selDate = null;       // YYYY-MM-DD
+let curType = 'expense';
+let isRepayment = false;
+
+/* ═══════════════════════════════════════════════
+   Init
+   ═══════════════════════════════════════════════ */
+async function init() {
+  const now = new Date();
+  curY = now.getFullYear();
+  curM = now.getMonth() + 1;
+  [cats, projs] = await Promise.all([j('/categories'), j('/projects')]);
+  render();
+}
+function j(p, o) { return fetch(API + p, o).then(r => { if (!r.ok) throw r; return r.status === 204 ? null : r.json(); }); }
+function fmt(n) { return n.toLocaleString('zh', {minimumFractionDigits: 0, maximumFractionDigits: 2}); }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+/* ═══════════════════════════════════════════════
+   Calendar Render
+   ═══════════════════════════════════════════════ */
+async function render() {
+  document.getElementById('monthLabel').textContent = `${curY}年${String(curM).padStart(2,'0')}月`;
+
+  const pad = n => String(n).padStart(2, '0');
+  const sDate = `${curY}-${pad(curM)}-01`;
+  const lastD = new Date(curY, curM, 0).getDate();
+  const eDate = `${curY}-${pad(curM)}-${pad(lastD)}`;
+
+  let txs = [];
+  try { txs = await j(`/transactions?start_date=${sDate}&end_date=${eDate}&limit=5000`); } catch(e) { console.error('fetch txs failed', e); }
+
+  // Group by date
+  const byD = {};
+  txs.forEach(t => { (byD[t.date] = byD[t.date] || []).push(t); });
+
+  // Summary
+  let ti = 0, te = 0;
+  txs.forEach(t => t.type === 'income' ? ti += t.amount : te += t.amount);
+  document.getElementById('sInc').textContent = '¥' + fmt(ti);
+  document.getElementById('sExp').textContent = '¥' + fmt(te);
+  const netEl = document.getElementById('sNet');
+  netEl.textContent = '¥' + fmt(ti - te);
+  netEl.style.color = ti >= te ? 'var(--green)' : 'var(--red)';
+
+  // Fetch reminders status for this month
+  const ym = `${curY}-${pad(curM)}`;
+  let reminders = [];
+  try { reminders = await j(`/reminders/status?year_month=${ym}`); } catch(e) {}
+  // Group reminders by day_of_month
+  const remByDay = {};
+  reminders.forEach(r => { remByDay[r.day_of_month] = remByDay[r.day_of_month] || []; remByDay[r.day_of_month].push(r); });
+
+  // Fetch future total for toolbar pill
+  try {
+    const ft = await j('/reminders/future-total');
+    const duePill = document.getElementById('sDuePill');
+    const dueEl = document.getElementById('sDue');
+    if (ft && ft.total > 0) {
+      duePill.style.display = '';
+      dueEl.textContent = '¥' + fmt(ft.total);
+    } else {
+      duePill.style.display = 'none';
+    }
+  } catch(e) { document.getElementById('sDuePill').style.display = 'none'; }
+
+  // Build grid - first weekday (Mon=0)
+  const firstW = (new Date(curY, curM - 1, 1).getDay() + 6) % 7;
+  const today = new Date();
+  const todayS = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+  const cal = document.querySelector('.calendar');
+  cal.querySelectorAll('.day').forEach(e => e.remove());
+
+  for (let i = 0; i < firstW; i++) {
+    cal.insertAdjacentHTML('beforeend', '<div class="day empty"></div>');
+  }
+
+  for (let d = 1; d <= lastD; d++) {
+    const ds = `${curY}-${pad(curM)}-${pad(d)}`;
+    const dayTxs = byD[ds] || [];
+    const dayRems = remByDay[d] || [];
+    const isToday = ds === todayS;
+    const dow = new Date(curY, curM - 1, d).getDay();
+    const isWE = dow === 0 || dow === 6;
+
+    let di = 0, de = 0;
+    dayTxs.forEach(t => { if (t.type === 'income') di += t.amount; else de += t.amount; });
+
+    let inner = `<div class="day-head"><span class="day-num">${d}</span></div><div class="day-body">`;
+
+    // Reminder badges
+    dayRems.forEach(r => {
+      const doneCls = r.done ? 'rem-done' : '';
+      const strikethrough = r.done ? 'text-decoration:line-through;opacity:.5' : '';
+      inner += `<div class="day-rem ${doneCls}" style="border-left:3px solid ${r.color};${strikethrough}" onclick="event.stopPropagation();toggleRem(${r.id},'${ym}',${!r.done})" title="${esc(r.name)}${r.amount ? ' ¥'+r.amount : ''}">${r.name}</div>`;
+    });
+
+    // Tx lines (max 2)
+    const show = dayTxs.slice(0, 2);
+    show.forEach(t => {
+      const ic = EMOJI[t.category_name] || DEF;
+      const isI = t.type === 'income';
+      inner += `<div class="day-tx ${isI?'inc':'exp'}"><span class="icon">${ic}</span><span class="label">${isI?'+':'-'}${fmt(t.amount)}</span></div>`;
+    });
+    if (dayTxs.length > 2) {
+      inner += `<div class="day-tx" style="color:var(--text3);font-size:12px">+${dayTxs.length - 2} more</div>`;
+    }
+
+    // Totals
+    if (dayTxs.length > 0 || dayRems.length > 0) {
+      inner += '<div class="day-total">';
+      if (di > 0) inner += `<span class="t-inc">+${fmt(di)}</span>`;
+      if (de > 0) inner += `<span class="t-exp">-${fmt(de)}</span>`;
+      inner += '</div>';
+    }
+
+    inner += '</div>';
+
+    cal.insertAdjacentHTML('beforeend',
+      `<div class="day ${isToday?'today':''} ${isWE?'weekend':''}" onclick="openPanel('${ds}')">${inner}</div>`
+    );
+  }
+
+  // ── Due This Month ──
+  renderDueSection(reminders, ym);
+}
+
+function renderDueSection(reminders, ym) {
+  const el = document.getElementById('dueList');
+  const badge = document.getElementById('dueCount');
+  const dueTotal = document.getElementById('dueTotal');
+  if (!reminders.length) {
+    el.innerHTML = '<div class="due-empty">本月没有待还款 🎉</div>';
+    badge.textContent = '0';
+    dueTotal.textContent = '';
+    return;
+  }
+  const pending = reminders.filter(r => !r.done);
+  const totalPending = pending.reduce((s, r) => s + (r.amount || 0), 0);
+  badge.textContent = pending.length;
+  badge.style.display = pending.length ? '' : 'none';
+  // Due section header total
+  dueTotal.textContent = totalPending > 0 ? '共 ¥' + fmt(totalPending) : '';
+
+  el.innerHTML = reminders.map(r => {
+    const dayStr = `每月${r.day_of_month}号`;
+    const range = r.start_date && r.end_date ? `${r.start_date}~${r.end_date}` : r.start_date ? `${r.start_date}~` : r.end_date ? `~${r.end_date}` : '';
+    return `<div class="due-row">
+      <div class="due-dot" style="background:${r.color}"></div>
+      <div class="due-info">
+        <div class="due-name">${esc(r.name)}</div>
+        <div class="due-meta">${dayStr}${range ? ' · '+range : ''}${r.note ? ' · '+esc(r.note) : ''}</div>
+      </div>
+      <div class="due-right" style="text-align:right;align-items:flex-end">
+        ${r.total_debt ? `<div style="font-size:10px;color:var(--text3)">总欠 ￥${fmt(r.total_debt)}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:10px">
+          ${r.amount ? `<span class="due-amt">￥${fmt(r.amount)}</span>` : ''}
+          <div class="due-check ${r.done?'done':''}" onclick="event.stopPropagation();toggleRem(${r.id},'${ym}',${!r.done})" title="${r.done?'标记为未还':'标记为已还'}">✓</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   Month Navigation
+   ═══════════════════════════════════════════════ */
+function changeMonth(d) {
+  curM += d;
+  if (curM > 12) { curM = 1; curY++; }
+  if (curM < 1)  { curM = 12; curY--; }
+  render();
+}
+function goToday() {
+  const n = new Date();
+  curY = n.getFullYear();
+  curM = n.getMonth() + 1;
+  render();
+}
+
+/* ═══════════════════════════════════════════════
+   Day Detail Panel
+   ═══════════════════════════════════════════════ */
+async function openPanel(ds) {
+  selDate = ds;
+  const [,m,d] = ds.split('-');
+  document.getElementById('pTitle').textContent = `${parseInt(m)}月${parseInt(d)}日 周${'日一二三四五六'[new Date(ds).getDay()]}`;
+
+  const txs = await j(`/transactions?start_date=${ds}&end_date=${ds}&limit=200`);
+  let di = 0, de = 0;
+  txs.forEach(t => t.type === 'income' ? di += t.amount : de += t.amount);
+
+  let h = `<div class="panel-day-sum">
+    <span>收入 <span class="s-inc">¥${fmt(di)}</span></span>
+    <span>支出 <span class="s-exp">¥${fmt(de)}</span></span>
+    <span>${txs.length} 笔</span>
+  </div>`;
+
+  if (!txs.length) {
+    h += '<div class="panel-empty">今天还没有记录<br>点击下方按钮添加</div>';
+  } else {
+    txs.forEach(t => {
+      const ic = EMOJI[t.category_name] || DEF;
+      const isI = t.type === 'income';
+      const rpBadge = t.is_repayment ? ' <span style="background:var(--orange);color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px">还款</span>' : '';
+      h += `<div class="tx-row">
+        <div class="tx-emoji ${t.type}">${ic}</div>
+        <div class="tx-mid">
+          <div class="tx-cat">${esc(t.category_name || '未分类')}${rpBadge}</div>
+          ${t.project_name ? `<div class="tx-sub">${esc(t.project_name)}</div>` : ''}
+          ${t.note ? `<div class="tx-note">${esc(t.note)}</div>` : ''}
+        </div>
+        <div class="tx-right">
+          <div class="tx-amt ${t.type}">${isI?'+':'-'}¥${fmt(t.amount)}</div>
+          <div class="tx-acts">
+            <button onclick="editTx(${t.id})">编辑</button>
+            <button class="del" onclick="delTx(${t.id})">删除</button>
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('pList').innerHTML = h;
+  document.getElementById('pMask').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+function closePanel() {
+  document.getElementById('pMask').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════════
+   Add / Edit Modal
+   ═══════════════════════════════════════════════ */
+const REPAY_CATS = ['信用卡还款','花呗还款','贷款还款','其他还款'];
+
+function fillSelects() {
+  const cs = document.getElementById('fCat');
+  const ps = document.getElementById('fProj');
+  cs.innerHTML = '';
+  ps.innerHTML = '<option value="">无</option>';
+  cats.filter(c => {
+    if (c.type !== curType) return false;
+    if (isRepayment) return REPAY_CATS.includes(c.name);
+    return !REPAY_CATS.includes(c.name);
+  }).forEach(c => {
+    cs.innerHTML += `<option value="${c.id}">${EMOJI[c.name]||''} ${c.name}</option>`;
+  });
+  projs.forEach(p => { ps.innerHTML += `<option value="${p.id}">${p.name}</option>`; });
+}
+function setType(t) {
+  curType = t;
+  document.getElementById('swExp').className = t === 'expense' ? 'on exp' : '';
+  document.getElementById('swInc').className = t === 'income' ? 'on inc' : '';
+  // Only show repayment toggle for expense
+  document.getElementById('repayWrap').style.display = t === 'expense' ? '' : 'none';
+  if (t !== 'expense') setRepayment(false);
+  fillSelects();
+}
+function setRepayment(v) {
+  isRepayment = v;
+  document.getElementById('swNormal').className = v ? '' : 'on';
+  document.getElementById('swRepay').className = v ? 'on repay' : '';
+  fillSelects();
+}
+function openAddModal() {
+  document.getElementById('editId').value = '';
+  document.getElementById('mTitle').textContent = '记一笔';
+  document.getElementById('fAmt').value = '';
+  document.getElementById('fDate').value = selDate || new Date().toISOString().slice(0,10);
+  document.getElementById('fNote').value = '';
+  setType('expense');
+  setRepayment(false);
+  fillSelects();
+  document.getElementById('mMask').classList.add('open');
+  document.getElementById('fAmt').focus();
+}
+function openAddForDate() { openAddModal(); if (selDate) document.getElementById('fDate').value = selDate; }
+function closeModal() { document.getElementById('mMask').classList.remove('open'); }
+
+async function editTx(id) {
+  const t = await j(`/transactions/${id}`);
+  document.getElementById('editId').value = id;
+  document.getElementById('mTitle').textContent = '编辑记录';
+  document.getElementById('fAmt').value = t.amount;
+  document.getElementById('fDate').value = t.date;
+  document.getElementById('fNote').value = t.note || '';
+  setType(t.type);
+  setRepayment(!!t.is_repayment);
+  setTimeout(() => {
+    document.getElementById('fCat').value = t.category_id || '';
+    document.getElementById('fProj').value = t.project_id || '';
+  }, 20);
+  document.getElementById('mMask').classList.add('open');
+  closePanel();
+}
+
+async function submitTx() {
+  const eid = document.getElementById('editId').value;
+  const data = {
+    date: document.getElementById('fDate').value,
+    amount: parseFloat(document.getElementById('fAmt').value.replace(/[¥¥,,\s]/g, '')),
+    type: curType,
+    category_id: parseInt(document.getElementById('fCat').value) || null,
+    project_id: parseInt(document.getElementById('fProj').value) || null,
+    is_repayment: isRepayment,
+    note: document.getElementById('fNote').value || null,
+  };
+  if (!data.date || !data.amount || data.amount <= 0) { alert('请填写金额和日期'); return; }
+  try {
+    if (eid) await j(`/transactions/${eid}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    else     await j('/transactions', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    closeModal(); render();
+    if (selDate) openPanel(selDate);
+  } catch(e) { alert('保存失败'); }
+}
+
+async function delTx(id) {
+  if (!confirm('确定删除?')) return;
+  const r = await fetch(API + `/transactions/${id}`, {method:'DELETE'});
+  if (!r.ok) { alert('删除失败: ' + r.status); return; }
+  render();
+  if (selDate) openPanel(selDate);
+}
+
+/* ═══════════════════════════════════════════════
+   NL Parse Modal
+   ═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   Reminders
+   ═══════════════════════════════════════════════ */
+let remEditId = null;
+
+async function openRemModal() {
+  remEditId = null;
+  resetRemForm();
+  document.getElementById('remMask').classList.add('open');
+  await loadRemList();
+}
+function closeRemModal() {
+  document.getElementById('remMask').classList.remove('open');
+  remEditId = null;
+  render();
+}
+
+function resetRemForm() {
+  ['remName','remDay','remAmt','remDebt','remStart','remEnd','remNote'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('remColor').value = '#ff3b30';
+  document.getElementById('remEditId').value = '';
+  remEditId = null;
+  document.getElementById('remFormLabel').textContent = '添加新提醒';
+  document.getElementById('remSubmitBtn').textContent = '添加';
+  document.getElementById('remCancelBtn').style.display = 'none';
+}
+
+function fillRemForm(r) {
+  remEditId = r.id;
+  document.getElementById('remEditId').value = r.id;
+  document.getElementById('remName').value = r.name;
+  document.getElementById('remDay').value = r.day_of_month;
+  document.getElementById('remAmt').value = r.amount || '';
+  document.getElementById('remDebt').value = r.total_debt || '';
+  document.getElementById('remColor').value = r.color;
+  document.getElementById('remStart').value = r.start_date || '';
+  document.getElementById('remEnd').value = r.end_date || '';
+  document.getElementById('remNote').value = r.note || '';
+  document.getElementById('remFormLabel').textContent = '编辑提醒';
+  document.getElementById('remSubmitBtn').textContent = '保存修改';
+  document.getElementById('remCancelBtn').style.display = '';
+}
+
+function cancelEdit() { resetRemForm(); }
+
+async function loadRemList() {
+  const rems = await j('/reminders');
+  const el = document.getElementById('remList');
+  if (!rems.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">还没有提醒,添加一个吧 ↓</div>';
+    return;
+  }
+  el.innerHTML = rems.map(r => {
+    const range = r.start_date && r.end_date ? `${r.start_date} ~ ${r.end_date}` : r.start_date ? `${r.start_date} ~` : r.end_date ? `~ ${r.end_date}` : '每月(无限制)';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f0f0f0">
+      <span style="width:10px;height:10px;border-radius:50%;background:${r.color};flex-shrink:0"></span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${esc(r.name)}</div>
+        <div style="font-size:11px;color:var(--text2)">每月${r.day_of_month}日${r.amount ? ' · 最低¥' + r.amount : ''}${r.total_debt ? ' · 总欠¥' + r.total_debt : ''} · ${range}</div>
+        ${r.note ? `<div style="font-size:11px;color:var(--text3)">${esc(r.note)}</div>` : ''}
+      </div>
+      <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;border-color:var(--border)" onclick="editReminder(${r.id})">编辑</button>
+      <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;border-color:var(--red);color:var(--red)" onclick="delReminder(${r.id})">删除</button>
+    </div>`;
+  }).join('');
+}
+
+async function saveReminder() {
+  const name = document.getElementById('remName').value.trim();
+  const day = parseInt(document.getElementById('remDay').value);
+  if (!name) { alert('请填写名称'); return; }
+  if (!day || day < 1 || day > 28) { alert('日期需在 1-28 之间'); return; }
+  const data = {
+    name,
+    day_of_month: day,
+    amount: parseFloat(document.getElementById('remAmt').value) || null,
+    total_debt: parseFloat(document.getElementById('remDebt').value) || null,
+    color: document.getElementById('remColor').value,
+    start_date: document.getElementById('remStart').value || null,
+    end_date: document.getElementById('remEnd').value || null,
+    note: document.getElementById('remNote').value || null,
+  };
+  if (remEditId) {
+    await j(`/reminders/${remEditId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  } else {
+    await j('/reminders', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  }
+  resetRemForm();
+  await loadRemList();
+}
+
+async function editReminder(id) {
+  const rems = await j('/reminders');
+  const r = rems.find(x => x.id === id);
+  if (r) fillRemForm(r);
+}
+
+async function delReminder(id) {
+  if (!confirm('确定删除此提醒?')) return;
+  const r = await fetch(API + `/reminders/${id}`, {method:'DELETE'});
+  if (!r.ok) { alert('删除失败: ' + r.status); return; }
+  if (remEditId === id) resetRemForm();
+  await loadRemList();
+}
+
+async function toggleRem(id, ym, done) {
+  if (done) {
+    await j(`/reminders/${id}/done`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({year_month:ym}) });
+  } else {
+    await j(`/reminders/${id}/done?year_month=${ym}`, { method:'DELETE' });
+  }
+  render();
+}
+
+/* ═══════════════════════════════════════════════
+   Backup
+   ═══════════════════════════════════════════════ */
+function openBakModal() {
+  document.getElementById('bakMask').classList.add('open');
+  document.getElementById('bakMsg').style.display = 'none';
+  loadBakList();
+}
+function closeBakModal() { document.getElementById('bakMask').classList.remove('open'); }
+
+async function openAboutModal() {
+  document.getElementById('aboutMask').classList.add('open');
+  try {
+    const r = await fetch(API + '/health');
+    const d = await r.json();
+    const dir = d.data_dir || '';
+    document.getElementById('aboutDbPath').innerHTML = dir
+      ? '<span onclick="openDataDir()" style="color:var(--blue);text-decoration:none;word-break:break-all;cursor:pointer">' + dir + '</span>'
+      : '(unknown)';
+  } catch(e) {
+    document.getElementById('aboutDbPath').textContent = window.location.origin;
+  }
+}
+function closeAboutModal() { document.getElementById('aboutMask').classList.remove('open'); }
+function openDataDir() { fetch(API + '/open-data-dir'); }
+
+async function loadBakList() {
+  const list = await j('/backups');
+  const el = document.getElementById('bakList');
+  if (!list.length) { el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:16px">暂无备份</div>'; return; }
+  el.innerHTML = list.map(b => {
+    const sz = b.size > 1024*1024 ? (b.size/1024/1024).toFixed(1)+'MB' : (b.size/1024).toFixed(0)+'KB';
+    // Parse filename: finance_20260609_154000.db
+    const m = b.filename.match(/finance_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})\.db/);
+    const dt = m ? `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}` : b.filename;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0">
+      <span style="flex:1;font-size:12px">${dt} <span style="color:var(--text3)">(${sz})</span></span>
+      <button style="font-size:11px;padding:4px 10px;border:1px solid var(--blue);color:var(--blue);border-radius:6px;background:#fff;cursor:pointer" onclick="doRestore('${b.filename}')">恢复</button>
+    </div>`;
+  }).join('');
+}
+
+async function doBackup() {
+  const r = await j('/backups', { method:'POST' });
+  if (r.ok) {
+    const msg = document.getElementById('bakMsg');
+    msg.style.display = 'block';
+    msg.textContent = '✅ 备份成功: ' + r.file;
+    loadBakList();
+  }
+}
+
+async function doRestore(filename) {
+  if (!confirm('确定恢复此备份?\n' + filename + '\n\n当前数据会先自动备份。')) return;
+  try {
+    const r = await fetch(API + '/backups/restore?filename=' + encodeURIComponent(filename), { method:'POST' });
+    const data = await r.json();
+    if (data.ok) {
+      alert('恢复成功!页面将刷新。');
+      location.reload();
+    } else {
+      alert('恢复失败: ' + JSON.stringify(data));
+    }
+  } catch(e) {
+    alert('恢复出错: ' + e.message);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   Keyboard Shortcuts
+   ═══════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('mMask').classList.contains('open')) closeModal();
+    else if (document.getElementById('remMask').classList.contains('open')) closeRemModal();
+    else if (document.getElementById('bakMask').classList.contains('open')) closeBakModal();
+    else if (document.getElementById('aboutMask').classList.contains('open')) closeAboutModal();
+    else if (document.getElementById('panel').classList.contains('open')) closePanel();
+  }
+});
+
+/* ── Go ──────────────────────────────────────── */
+init();
+</script>
+</body>
+</html>
